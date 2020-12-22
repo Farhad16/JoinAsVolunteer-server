@@ -42,7 +42,7 @@ client.connect(err => {
 	app.post('/register', (req, res) => {
 		const registerData = req.body.eventRegister;
 		const { email, title } = registerData;
-		console.log(registerData);
+
 		registerVolunteerCollections.find({ email: email, title: title })
 			.toArray((err, document) => {
 				if (document.length > 0) {
