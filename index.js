@@ -28,11 +28,15 @@ client.connect(err => {
 	const adminCollection = client.db("volunteer").collection("admin");
 
 	app.get('/programs', (req, res) => {
-		programCollections.find({})
-			.toArray((err, documents) => {
-				res.send(documents)
+		const search = req.query.keyword;
+
+		programCollections.find({ area: { $regex: search } })
+			.toArray((err, document) => {
+				console.log(document);
+				res.send(document)
 			})
-	});
+	})
+
 
 
 	app.post('/register', (req, res) => {
@@ -124,6 +128,38 @@ client.connect(err => {
 			})
 	})
 
+	app.post('/addProgram', (req, res) => {
+		const file = req.files.file;
+		const name = req.body.name;
+		const title = req.body.title;
+		const description = req.body.description;
+		const area = req.body.area;
+
+		const filePath = `${__dirname}/programs/${file.name}`;
+		file.mv(filePath, err => {
+			if (err) {
+				return res.status(500).send({ msg: "Failed to upload img" })
+			}
+			res.send({ name: file.name, path: `/${file.name}` });
+
+			const newImg = fs.readFileSync(filePath);
+			const encImg = newImg.toString('base64');
+
+			const image = {
+				contentType: file.mimetype,
+				size: file.size,
+				img: Buffer.from(encImg, 'base64')
+			};
+
+			programCollections.insertOne({ name, title, description, area, image })
+				.then(result => {
+					res.send(result.insertedCount > 0)
+				});
+		})
+
+	});
+
+
 	app.get('/', (req, res) => {
 		res.send('Hello volunteer programs')
 	})
@@ -131,152 +167,3 @@ client.connect(err => {
 	app.listen(process.env.PORT || port)
 
 });
-    // const servicesCollection = client.db("creativeAgency").collection("services");
-    // const adminCollection = client.db("creativeAgency").collection("admin");
-    // const feedbacksCollection = client.db("creativeAgency").collection("feedbacks");
-    // const ordersCollection = client.db("creativeAgency").collection("orders");
-
-    // app.post('/addService', (req, res) => {
-    //     const file = req.files.file;
-    //     const title = req.body.title;
-    //     const description = req.body.description;
-    //     const filePath = `${__dirname}/services/${file.name}`;
-    //     file.mv(filePath, err => {
-    //         if (err) {
-    //             console.log(err);
-    //             return res.status(500).send({ msg: "Failed to upload img" })
-    //         }
-    //         res.send({ name: file.name, path: `/${file.name}` });
-
-    //         const newImg = fs.readFileSync(filePath);
-    //         const encImg = newImg.toString('base64');
-
-    //         const img = {
-    //             contentType: file.mimetype,
-    //             size: file.size,
-    //             img: Buffer.from(encImg, 'base64')
-    //         };
-    //         servicesCollection.insertOne({ title, description, img })
-    //             .then(result => {
-    //                 res.send(result.insertedCount > 0)
-    //             });
-    //     });
-
-    // });
-
-
-    // app.get('/services', (req, res) => {
-    //     servicesCollection.find({})
-    //         .toArray((err, documents) => {
-    //             res.send(documents);
-    //         });
-    // });
-
-
-    // app.post('/addFeedback', (req, res) => {
-    //     const feedback = req.body;
-
-    //     feedbacksCollection.insertOne(feedback)
-    //         .then(result => {
-    //             res.send(result.insertedCount > 0)
-    //         });
-    // });
-
-    // app.get('/feedbacks', (req, res) => {
-    //     feedbacksCollection.find({})
-    //         .toArray((err, documents) => {
-    //             res.send(documents);
-    //         })
-    // });
-
-
-    // app.post('/isAdmin', (req, res) => {
-    //     const email = req.body.email;
-    //     adminCollection.find({ email: email })
-    //         .toArray((err, admin) => {
-    //             res.send(admin.length > 0);
-    //         })
-    // })
-
-    // app.post('/addOrder', (req, res) => {
-    //     const file = req.files.file;
-    //     const name = req.body.name;
-    //     const email = req.body.email;
-    //     const orderName = req.body.orderName;
-    //     const projectDetails = req.body.projectDetails;
-    //     const price = req.body.price;
-    //     const status = req.body.status;
-    //     const filePath = `${__dirname}/orders/${file.name}`;
-
-
-    //     file.mv(filePath, err => {
-    //         if (err) {
-    //             console.log(err);
-    //             return res.status(500).send({ msg: "Failed to upload img" })
-    //         }
-    //         res.send({ name: file.name, path: `/${file.name}` });
-
-    //         const newImg = fs.readFileSync(filePath);
-    //         const encImg = newImg.toString('base64');
-
-    //         const img = {
-    //             contentType: file.mimetype,
-    //             size: file.size,
-    //             img: Buffer.from(encImg, 'base64')
-    //         };
-
-    //         ordersCollection.insertOne({ name, email, orderName, projectDetails, price, img, status })
-    //             .then(result => {
-    //                 res.send(result.insertedCount > 0)
-    //             });
-    //     });
-
-    // });
-
-    // app.get('/orders/:email', (req, res) => {
-    //     const email = req.params.email
-    //     adminCollection.find({ email: email })
-    //         .toArray((err, admin) => {
-    //             if (admin.length > 0) {
-    //                 ordersCollection.find({})
-    //                     .toArray((err, documents) => {
-    //                         res.send(documents);
-    //                     })
-    //             }
-    //             else {
-    //                 ordersCollection.find({ email: email })
-    //                     .toArray((err, documents) => {
-    //                         res.send(documents);
-    //                     })
-    //             }
-
-    //         })
-    // });
-
-
-
-    // app.patch("/updateStatus/:id", (req, res) => {
-    //     ordersCollection.updateOne(
-    //         {
-    //             _id: ObjectId(req.params.id),
-    //         },
-    //         {
-    //             $set: {
-    //                 status: req.body.status,
-    //             },
-    //         }
-    //     )
-    //         .then((result) => {
-    //             res.send(result.modifiedCount > 0);
-    //         });
-    // });
-
-
-    // app.post('/makeAdmin', (req, res) => {
-    //     const email = req.body.email;
-
-    //     adminCollection.insertOne({ email: email })
-    //         .then(result => {
-    //             res.send(result.insertedCount > 0)
-    //         });
-    // })
